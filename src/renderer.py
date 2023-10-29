@@ -12,36 +12,39 @@ class Renderer:
         # create a list called self.display with the appropriate range
         self.display = ([0] * self.cols * self.rows)
 
-    def setPixel(self, x, y):
+    def setPixel(self, x, y, wrap=False):
 
-        # Deal with wrapping as per technical reference.
-        x = x % self.cols
-        y = y % self.rows
+        if wrap is True:
+            # wrap around the screen if the coordinates are greater than the screen size or less than 0
+            x = x % self.cols
+            if x < 0:
+                x = self.cols + x
 
-        print(x, y)
+            y = y % self.rows
+            if y < 0:
+                y = self.rows + y
+
 
         # Calculate the index in the display array.
         index = x + (y * self.cols)
 
         # check if index is out of range
         if index > len(self.display):
-            print("index out of range")
-
-        # Set the pixel to 1 if it is already 1, then return 1.
-        if self.display[index] == 1:
-            self.display[index] = 0
-            return 1
-        else:
-            self.display[index] = 1
             return 0
+
+        # XOR value into the display
+        self.display[index] ^= 1
+
+        # return 1 if collision else 0
+        return not self.display[index]
 
 
     def clear(self):
-        self.screen.fill((0, 0, 0))
         self.display = [0] * self.cols * self.rows
-        pygame.display.flip()
 
     def render(self):
+
+        self.screen.fill((0, 0, 0))
 
         # Iterate through the display array.
         for i in range(self.cols * self.rows):
@@ -53,9 +56,10 @@ class Renderer:
             # If the value at index i in the display array is 1, then draw a square.
             if self.display[i]:
                 rect = pygame.draw.rect(self.screen, (255, 255, 255), (x, y, self.scale, self.scale))
-                pygame.display.update(rect)
+
+        pygame.display.flip()
 
 
     def testRender(self):
         self.setPixel(0, 0)
-        self.setPixel(5, 2)
+        self.setPixel(0, -31)

@@ -70,12 +70,15 @@ class Controls:
 
     def wait_for_key_press(self):
         print("waiting for key press")
-        self.onNextKeyPress = True
+        while True:
+            event = pygame.event.wait(6000)
 
-        key = self.handle_events()
+            # When an event occurs, try to map it from the pygame key to the Chip-8 key
+            if event.type == pygame.KEYDOWN:
+                key = self.KEYMAP.get(event.key)
 
-        while key is None:
-            key = self.handle_events()
-        return key
+                # If the pressed key is in the keymap, return the corresponding Chip-8 key
+                if key is not None:
+                    return key
 
 

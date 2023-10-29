@@ -18,12 +18,12 @@ class Chip8:
         pygame.display.set_caption("Chip8 Emulator")
         self.renderer = Renderer(10)
         self.clock = Clock()
-        self.fps = 301
+        self.fps = 30
         self.controls = Controls()
         self.audio = Audio()
         self.CPU = CPU(self.renderer, self.controls, self.audio)
         self.CPU.load_spriate_into_memory()
-        self.CPU.readRom("roms/blitz")
+        self.CPU.readRom("roms/test.ch8")
         self.last_time = 0
 
         # create loop to run the program
@@ -39,13 +39,13 @@ class Chip8:
     def step(self):
         now = self.clock.get_time()
         elapsed = now - self.last_time
-        self.clock.tick(self.fps)
 
 
         self.CPU.cycle()
         self.last_time = now
-        self.controls.handle_events()
         self.renderer.render()
+        self.clock.tick(self.fps)
+        #self.controls.handle_events()
 
 
 

@@ -2,6 +2,7 @@ import numpy as np
 import random
 from functools import partial
 
+SHOULD_WRAP = False
 
 class CPU:
 
@@ -41,7 +42,7 @@ class CPU:
             0xF0, 0x80, 0x80, 0x80, 0xF0,  # C
             0xE0, 0x90, 0x90, 0x90, 0xE0,  # D
             0xF0, 0x80, 0xF0, 0x80, 0xF0,  # E
-            0xF0, 0x80, 0xF0, 0x80, 0x80  # F
+            0xF0, 0x80, 0xF0, 0x80, 0x80   # F
         ]
 
         for i, sprite in enumerate(sprites):
@@ -158,8 +159,6 @@ class CPU:
                 # VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
                 temp = self.v[x] + self.v[y]
 
-                print(self.v)
-
                 # Check if the result is greater than 8 bits.
                 # Toggle collision flag if it is.
                 if temp > 255:
@@ -169,7 +168,6 @@ class CPU:
 
                 # Only keep the lowest 8 bits of the result using a bitmask.
                 self.v[x] = temp & 0x00FF
-                print(f"Vx: {self.v[x]}")
             elif nibble_differentiator == 0x0005:
                 # Set Vx = Vx - Vy, set VF = NOT borrow.
                 #
@@ -187,7 +185,7 @@ class CPU:
                 # If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
                 #
                 # grab the least significant bit of Vx
-                lsb = self.v[x] & 0x0001
+                lsb = self.v[x] & 0x1
 
                 # if lsb is 1, set VF to 1, otherwise 0
                 if lsb == 1:
@@ -243,9 +241,7 @@ class CPU:
             # The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk.
             # The results are stored in Vx.
 
-            ran = random.randint(0, 254)
-            print(ran)
-            print(kk)
+            ran = random.randint(0, 255)
             self.v[x] = ran & kk
         elif opcode == 0xD000:
             # Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
@@ -262,19 +258,18 @@ class CPU:
             # Chip-8 sprites may be up to 15 bytes, for a possible sprite size of 8x15.
             width = 8
             height = nnn & 0xF
-
             assert height <= 15, "Sprite height is too large"
-
-
-
 
             # reset the collision flag
             self.v[0xF] = 0
 
+
+
             # unpack the sprite from memory aka unwrap it
             for row in range(height):
+
                 sprite = self.memory[self.index_register + row]
-                print(f"Sprite: {sprite}")
+
 
                 # displaying the sprite, we don't need to XOR since renderer.draw_pixel() does that for us.
                 # We also don't have to worry about wrapping around the screen since the renderer does that for us too.
@@ -282,19 +277,25 @@ class CPU:
                 for col in range(width):
                     # finding most significant bit of sprite
                     msb = sprite & 0x80
-                    print(f"MSB: {msb}")
 
                     # if the pixel is on in the sprite:
                     if msb > 0:
                         # if the pixel is on in the screen, it will unset thus returning 1 so we know to toggle
                         # collision flag.
-                        print(f"row: {row}, col: {col}")
-                        print(f"X: {self.v[x]}, Y: {self.v[y]}")
-                        if self.renderer.setPixel(self.v[x] + col, self.v[y] + row):
-                            self.v[0xF] = 1
+
+                        if SHOULD_WRAP:
+                            if self.renderer.setPixel(self.v[x] + col, self.v[y] + row, True) == 1:
+                                self.v[0xF] = 1
+                        else:
+                            if self.renderer.setPixel(self.v[x] + col, self.v[y] + row, False) == 1:
+                                self.v[0xF] = 1
+
+
 
                     # shift the sprite left by 1
                     sprite <<= 1
+
+                    # sleep for 5 seconds
 
                     # NOTE: there is an alternative way to do this, and that is to convert the sprite into a 2d array
                     # and then iterate through that array and draw the pixels. I chose to do it this way because it
@@ -328,7 +329,6 @@ class CPU:
                 # Wait for a key press, store the value of the key in Vx.
                 #
                 # All execution stops until a key is pressed, then the value of that key is stored in Vx.
-                print(self.v[x])
                 self.paused = True
 
                 # defines the function for self.controls.onNextKeyPress to call inside of self.controls.on_key_down
@@ -375,13 +375,13 @@ class CPU:
                     #
                     # The interpreter copies the values of registers V0 through Vx into memory, starting at the address
                     # in I.
-                    for i in range(x + 1):
+                    for i in range(x):
                         self.memory[self.index_register + i] = self.v[i]
                 elif (instruction & 0x00FF) == 0x0065:
                     # Read registers V0 through Vx from memory starting at location I.
                     #
                     # The interpreter reads values from memory starting at location I into registers V0 through Vx.
-                    for i in range(x + 1):
+                    for i in range(x):
                         self.v[i] = self.memory[self.index_register + i]
         else:
             raise Exception(f'Unknown opcode: {instruction}')
