@@ -359,9 +359,11 @@ class CPU:
                 #
                 # The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in
                 # I, the tens digit at location I+1, and the ones digit at location I+2.
-                self.memory[self.index_register] = self.v[x] // 100
-                self.memory[self.index_register + 1] = (self.v[x] // 10) % 10
-                self.memory[self.index_register + 2] = (self.v[x] % 100) % 10
+                new_x = (opcode & 0x0F00) >> 8
+                val = self.v[new_x]
+                self.memory[self.index_register] = int(val // 100)
+                self.memory[self.index_register + 1] = int((val // 10) % 10)
+                self.memory[self.index_register + 2] = int((val % 100) % 10)
             elif nibble_differentiator == 0x0005:
                 # We need to check the last 2 nibbles to determine which instruction to execute for f-opcodes ending
                 # in 5

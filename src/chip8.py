@@ -23,7 +23,7 @@ class Chip8:
         self.audio = Audio()
         self.CPU = CPU(self.renderer, self.controls, self.audio)
         self.CPU.load_spriate_into_memory()
-        self.CPU.readRom("roms/test.ch8")
+        self.CPU.readRom("roms/BLITZ")
         self.last_time = 0
 
         # create loop to run the program
@@ -35,24 +35,12 @@ class Chip8:
     def getCurrentTime(self):
         return self.clock.get_time()
 
-
     def step(self):
         now = self.clock.get_time()
         elapsed = now - self.last_time
 
-
-        self.CPU.cycle()
-        self.last_time = now
-        self.renderer.render()
-        self.clock.tick(self.fps)
-        #self.controls.handle_events()
-
-
-
-
-    def emulate_cycle(self):
-        pass
-
-
-
-
+        if elapsed < 1000 / self.fps:
+            self.controls.handle_events()
+            self.renderer.render()
+            self.CPU.cycle()
+            self.last_time = now
