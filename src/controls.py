@@ -1,4 +1,5 @@
 import pygame
+from config import FPS
 
 
 class Controls:
@@ -32,12 +33,27 @@ class Controls:
         self.add_event_listner(pygame.KEYUP, self.on_key_up)
         self.add_event_listner(pygame.QUIT, pygame.quit)
 
+        # creating timers
+        self.delay_timer = 0
+        self.sound_timer = 0
+
+        # create an event for the timers
+        decrement = pygame.USEREVENT + 1
+
+        # create a timer that decrements the delay timer every 60ms
+        pygame.time.set_timer(decrement, FPS)
+
+        # add it to the event listener
+        self.add_event_listner(decrement, self.on_delay_timer)
+
+
+
+
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type in self.events:
                 self.events[event.type](event)  # Call the event callback.
-
-
 
     def add_event_listner(self, event_id, callback):
         self.events[event_id] = callback
@@ -57,6 +73,14 @@ class Controls:
         key = self.KEYMAP[event.key]
         self.keysPressed[key] = False
 
+    def on_delay_timer(self, event: pygame.USEREVENT):
+        print("delay timer")
+        if self.delay_timer > 0:
+            self.delay_timer -= 1
+
+        if self.sound_timer > 0:
+            self.sound_timer -= 1
+
     def is_key_pressed(self, key_code):
         return key_code in self.keysPressed and self.keysPressed[key_code]
 
@@ -73,7 +97,3 @@ class Controls:
                 # If the pressed key is in the keymap, return the corresponding Chip-8 key
                 if key is not None:
                     return key
-
-        return None
-
-

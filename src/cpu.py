@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from functools import partial
+from config import FPS
 
 SHOULD_WRAP = False
 
@@ -15,8 +15,6 @@ class CPU:
         self.v = np.array([0] * 16, np.uint8)  # 16 8-bit registers named V0, V1, ..., VF.
         self.index_register = np.array([0], np.uint16)  # 16-bit register called I (used for storing addresses).
 
-        self.delay_timer = 0
-        self.sound_timer = 0
 
         self.program_counter = 0x200  # Program counter starts at 0x200 (512).
 
@@ -25,7 +23,7 @@ class CPU:
         self.paused = False
         self.speed = 10
 
-    def load_spriate_into_memory(self):
+    def load_sprites_into_memory(self):
         sprites = [
             0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
             0x20, 0x60, 0x20, 0x20, 0x70,  # 1
@@ -61,11 +59,10 @@ class CPU:
         for i in range(self.speed):
             if not self.paused:
                 opcode = (self.memory[self.program_counter] << 8) | self.memory[self.program_counter + 1]
-                print(hex(opcode))
                 self.execute_instruction(opcode)
 
         if not self.paused:
-            self.update_timers()
+            self.play_sound()
 
         self.play_sound()
         self.renderer.render()
@@ -157,28 +154,37 @@ class CPU:
                 #
                 # The values of Vx and Vy are added together. If the result is greater than 8 bits (i.e., > 255,)
                 # VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
-                temp = self.v[x] + self.v[y]
 
-                # Check if the result is greater than 8 bits.
-                # Toggle collision flag if it is.
-                if temp > 255:
+                result = np.add(self.v[x], self.v[y], dtype=np.uint16)  # We need to use uint16 to prevent overflow.
+
+                if result > 255:
                     self.v[0xF] = 1
                 else:
                     self.v[0xF] = 0
 
-                # Only keep the lowest 8 bits of the result using a bitmask.
-                self.v[x] = temp & 0x00FF
+                self.v[x] = result & 0xFF  # We only want the lowest 8 bits.
+
+                # cast back to uint8
+                self.v[x] = np.uint8(self.v[x])
+
             elif nibble_differentiator == 0x0005:
                 # Set Vx = Vx - Vy, set VF = NOT borrow.
                 #
                 # If Vx > Vy, then VF is set to 1, otherwise 0.
                 # Then Vy is subtracted from Vx, and the results stored in Vx.
+
                 if self.v[x] > self.v[y]:
                     self.v[0xF] = 1
                 else:
                     self.v[0xF] = 0
 
-                self.v[x] -= self.v[y]
+                # cast to int16 to prevent overflow when subtracting
+                result = np.subtract(self.v[x], self.v[y], dtype=np.int16)  # We need to use int16 to prevent overflow.
+
+                self.v[x] = result & 0xFF  # We only want the lowest 8 bits.
+
+                # cast back to uint8
+                self.v[x] = np.uint8(self.v[x])
 
             elif nibble_differentiator == 0x0006:
                 # set Vx = Vx SHR 1.
@@ -324,7 +330,7 @@ class CPU:
                 # Set Vx = delay timer value.
                 #
                 # The value of DT is placed into Vx.
-                self.v[x] = self.delay_timer
+                self.v[x] = self.controls.delay_timer
             elif nibble_differentiator == 0x000A:  # TODO test this instruction to make sure it works.
                 # Wait for a key press, store the value of the key in Vx.
                 #
@@ -336,14 +342,13 @@ class CPU:
 
                 self.v[x] = key
                 self.paused = False
-                print(f"key pressed: {self.v[x]}")
 
 
             elif nibble_differentiator == 0x0008:
                 # Set sound timer = Vx.
                 #
                 # ST is set equal to the value of Vx.
-                self.sound_timer = self.v[x]
+                self.controls.sound_timer = self.v[x]
             elif nibble_differentiator == 0x000E:
                 # Set I = I + Vx.
                 #
@@ -359,11 +364,14 @@ class CPU:
                 #
                 # The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in
                 # I, the tens digit at location I+1, and the ones digit at location I+2.
-                new_x = (opcode & 0x0F00) >> 8
-                val = self.v[new_x]
-                self.memory[self.index_register] = int(val // 100)
-                self.memory[self.index_register + 1] = int((val // 10) % 10)
-                self.memory[self.index_register + 2] = int((val % 100) % 10)
+                value = self.v[x]
+
+                # Hundreds place
+                self.memory[self.index_register] = value // 100
+                # Tens place
+                self.memory[self.index_register + 1] = (value % 100) // 10
+                # Ones place
+                self.memory[self.index_register + 2] = value % 10
             elif nibble_differentiator == 0x0005:
                 # We need to check the last 2 nibbles to determine which instruction to execute for f-opcodes ending
                 # in 5
@@ -371,36 +379,30 @@ class CPU:
                     # Set delay timer = Vx.
                     #
                     # DT is set equal to the value of Vx.
-                    self.delay_timer = self.v[x]
+                    self.controls.delay_timer = self.v[x]
                 elif (instruction & 0x00FF) == 0x0055:
                     # Store registers V0 through Vx in memory starting at location I.
                     #
                     # The interpreter copies the values of registers V0 through Vx into memory, starting at the address
                     # in I.
-                    for i in range(x):
+                    for i in range(x + 1):
                         self.memory[self.index_register + i] = self.v[i]
                 elif (instruction & 0x00FF) == 0x0065:
                     # Read registers V0 through Vx from memory starting at location I.
                     #
                     # The interpreter reads values from memory starting at location I into registers V0 through Vx.
-                    for i in range(x):
+                    for i in range(x + 1):
                         self.v[i] = self.memory[self.index_register + i]
+
         else:
             raise Exception(f'Unknown opcode: {instruction}')
 
-        print("made it to the end of the instruction switch statement")
-
-    def update_timers(self):
-        if self.delay_timer > 0:
-            self.delay_timer -= 1
-
-        if self.sound_timer > 0:
-            if self.sound_timer == 1:
-                self.sound_timer -= 1
 
     def play_sound(self):
         # As long as sound timer is greater than zero a sound will be playing.
-        if self.sound_timer > 0:
-            self.audio.play(440, 0.1)
+        print(self.controls.sound_timer)
+        if self.controls.sound_timer > 0:
+            self.audio.play(440, 0.4)
+
         else:
             self.audio.stop()

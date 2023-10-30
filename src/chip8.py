@@ -7,6 +7,7 @@ from controls import Controls
 from renderer import Renderer
 from audio import Audio
 from cpu import CPU
+from config import FPS
 from datetime import datetime as Date, time, datetime
 
 
@@ -18,15 +19,12 @@ class Chip8:
         pygame.display.set_caption("Chip8 Emulator")
         self.renderer = Renderer(10)
         self.clock = Clock()
-        self.fps = 30
-        self.controls = Controls()
         self.audio = Audio()
+        self.controls = Controls()
         self.CPU = CPU(self.renderer, self.controls, self.audio)
-        self.CPU.load_spriate_into_memory()
-        self.CPU.readRom("roms/BLITZ")
-        self.last_time = 0
 
-        # create loop to run the program
+        self.CPU.load_sprites_into_memory()
+        self.CPU.readRom("roms/audio_test")
 
     def run(self):
         while True:
@@ -36,11 +34,7 @@ class Chip8:
         return self.clock.get_time()
 
     def step(self):
-        now = self.clock.get_time()
-        elapsed = now - self.last_time
-
-        if elapsed < 1000 / self.fps:
-            self.controls.handle_events()
-            self.renderer.render()
-            self.CPU.cycle()
-            self.last_time = now
+        self.controls.handle_events()
+        self.renderer.render()
+        self.CPU.cycle()
+        self.clock.tick(FPS)
