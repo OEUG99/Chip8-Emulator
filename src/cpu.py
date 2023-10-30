@@ -1,7 +1,6 @@
 import numpy as np
 import random
-
-SHOULD_WRAP = False
+from config import SHOULD_WRAP
 
 
 class CPU:
@@ -395,7 +394,7 @@ class CPU:
         # As long as sound timer is greater than zero a sound will be playing.
         print(self.controls.sound_timer)
         if self.controls.sound_timer > 0:
-            self.audio.play(440, 0.4)
+            self.audio.play(440, 10)
 
         else:
             self.audio.stop()

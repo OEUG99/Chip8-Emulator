@@ -1,1 +1,2 @@
 FPS = 30
+SHOULD_WRAP = False
