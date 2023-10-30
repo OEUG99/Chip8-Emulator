@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from config import SHOULD_WRAP
+from config import ENABLE_WRAPPING, SPEED
 
 
 class CPU:
@@ -19,7 +19,7 @@ class CPU:
         self.stack = []
 
         self.paused = False
-        self.speed = 10
+
 
     def load_sprites_into_memory(self):
         sprites = [
@@ -54,7 +54,7 @@ class CPU:
             self.__load_bytes_into_memory(bytes_)
 
     def cycle(self):
-        for i in range(self.speed):
+        for i in range(SPEED):
             if not self.paused:
                 opcode = (self.memory[self.program_counter] << 8) | self.memory[self.program_counter + 1]
                 self.execute_instruction(opcode)
@@ -284,7 +284,7 @@ class CPU:
                         # if the pixel is on in the screen, it will unset thus returning 1 so we know to toggle
                         # collision flag.
 
-                        if SHOULD_WRAP:
+                        if ENABLE_WRAPPING:
                             if self.renderer.setPixel(self.v[x] + col, self.v[y] + row, True) == 1:
                                 self.v[0xF] = 1
                         else:
