@@ -1,5 +1,3 @@
-import os
-
 import pygame
 from pygame import QUIT, KEYDOWN, KEYUP
 from pygame.time import Clock
@@ -8,7 +6,6 @@ from renderer import Renderer
 from audio import Audio
 from cpu import CPU
 from config import FPS
-from datetime import datetime as Date, time, datetime
 
 
 class Chip8:

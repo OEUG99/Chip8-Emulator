@@ -1,8 +1,8 @@
 import numpy as np
 import random
-from config import FPS
 
 SHOULD_WRAP = False
+
 
 class CPU:
 
@@ -14,7 +14,6 @@ class CPU:
         self.memory = [0] * 4096  # 4096 bytes of memory.
         self.v = np.array([0] * 16, np.uint8)  # 16 8-bit registers named V0, V1, ..., VF.
         self.index_register = np.array([0], np.uint16)  # 16-bit register called I (used for storing addresses).
-
 
         self.program_counter = 0x200  # Program counter starts at 0x200 (512).
 
@@ -40,7 +39,7 @@ class CPU:
             0xF0, 0x80, 0x80, 0x80, 0xF0,  # C
             0xE0, 0x90, 0x90, 0x90, 0xE0,  # D
             0xF0, 0x80, 0xF0, 0x80, 0xF0,  # E
-            0xF0, 0x80, 0xF0, 0x80, 0x80   # F
+            0xF0, 0x80, 0xF0, 0x80, 0x80  # F
         ]
 
         for i, sprite in enumerate(sprites):
@@ -269,13 +268,10 @@ class CPU:
             # reset the collision flag
             self.v[0xF] = 0
 
-
-
             # unpack the sprite from memory aka unwrap it
             for row in range(height):
 
                 sprite = self.memory[self.index_register + row]
-
 
                 # displaying the sprite, we don't need to XOR since renderer.draw_pixel() does that for us.
                 # We also don't have to worry about wrapping around the screen since the renderer does that for us too.
@@ -295,8 +291,6 @@ class CPU:
                         else:
                             if self.renderer.setPixel(self.v[x] + col, self.v[y] + row, False) == 1:
                                 self.v[0xF] = 1
-
-
 
                     # shift the sprite left by 1
                     sprite <<= 1
@@ -396,7 +390,6 @@ class CPU:
 
         else:
             raise Exception(f'Unknown opcode: {instruction}')
-
 
     def play_sound(self):
         # As long as sound timer is greater than zero a sound will be playing.

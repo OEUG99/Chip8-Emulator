@@ -46,10 +46,6 @@ class Controls:
         # add it to the event listener
         self.add_event_listner(decrement, self.on_delay_timer)
 
-
-
-
-
     def handle_events(self):
         for event in pygame.event.get():
             if event.type in self.events:
