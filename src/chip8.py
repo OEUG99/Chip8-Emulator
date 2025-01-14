@@ -21,7 +21,7 @@ class Chip8:
         self.CPU = CPU(self.renderer, self.controls, self.audio)
 
         self.CPU.load_sprites_into_memory()
-        self.CPU.readRom("roms/audio_test")
+        self.CPU.readRom("roms/tetris")
 
     def run(self):
         while True:
