@@ -1,1 +1,1 @@
-Running `main.py` after installing the requirements will start the emulator with a default game. The emulator is 100% compliant with all Chip-8 standard/s
+Running `main.py` after installing the requirements will start the emulator with a default game. The emulator is 100% compliant with all [Chip-8 specifications](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM)
